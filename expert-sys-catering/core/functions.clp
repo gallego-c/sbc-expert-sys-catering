@@ -62,6 +62,8 @@
 
 (deffunction MAIN::ingredientes-fuera-de-temporada (?dish-id ?event-season)
   "Returns TRUE if the dish contains any ingredient that is NOT in season for ?event-season."
+  ;; If event season is 'any', all dishes are in season
+  (if (eq ?event-season any) then (return FALSE))
   (bind ?dish-objs (find-all-instances ((?d MAIN::dish)) (eq (send ?d get-id) ?dish-id)))
   (if (eq ?dish-objs nil) then (return FALSE))
   (bind ?dish (nth$ 1 ?dish-objs))
