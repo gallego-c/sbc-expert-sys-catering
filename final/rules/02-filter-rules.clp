@@ -6,6 +6,7 @@
 
 (defrule RECOMENDACION_FILTRADO::filtrar-por-dietas
    ?profile <- (object (is-a MAIN::user-profile) (diet $?user-diets) (specific-beverage ?bev-subtype) (num-people ?num-people) (budget ?budget) (cuisine ?cuisine) (season ?event-season))
+   ?restriccion <- (object (is-a MAIN::aplicar-todas-restricciones) (aplicar ?aplicar))
    (not (object (is-a MAIN::filtrado-completado)))
    =>
    (printout t crlf "== FILTRANDO PLATOS POR RESTRICCIONES DIETARIAS ==" crlf)
@@ -22,12 +23,18 @@
      (printout t " Filtrando por cocina: " ?cuisine crlf))
    (if (neq ?event-season any) then
      (printout t " Filtrando por temporada: " ?event-season " (verificando ingredientes)" crlf))
+   
+   ;; Determinar si aplicar restricciones dietéticas
+   (if (eq ?aplicar no) then
+     (printout t " MODO ESPECIAL: Se generará 1 menú vegetariano y 2 menús sin restricciones dietéticas" crlf))
+   
    (bind ?total-platos 0)
    (bind ?platos-validos 0)
    (bind ?platos-descartados-dificultad 0)
    (bind ?platos-descartados-precio 0)
    (bind ?platos-descartados-cocina 0)
    (bind ?platos-descartados-temporada 0)
+   
    (do-for-all-instances ((?d MAIN::dish)) TRUE
      (bind ?total-platos (+ ?total-platos 1))
      (bind ?dish-id (send ?d get-id))
@@ -35,8 +42,18 @@
      (bind ?dish-cuisine (send ?d get-cuisine))
      (bind ?dish-difficulty (send ?d get-difficulty))
      (bind ?valido FALSE)
+     
+     ;; Determinar qué restricciones dietéticas aplicar
+     (bind ?dietas-a-aplicar (create$))
+     (if (eq ?aplicar si) then
+       ;; Aplicar todas las restricciones dietéticas del usuario
+       (bind ?dietas-a-aplicar ?user-diets)
+     else
+       ;; No aplicar restricciones dietéticas (solo filtros de cocina, dificultad, presupuesto)
+       (bind ?dietas-a-aplicar (create$)))
+     
      ;; First check dietary restrictions
-     (if (not (es-plato-valido ?dish-id (expand$ ?user-diets))) then
+     (if (not (es-plato-valido ?dish-id (expand$ ?dietas-a-aplicar))) then
        ;; Skip - not valid for diet
        (bind ?valido FALSE)
      else
@@ -57,6 +74,7 @@
      (if ?valido then
        (bind ?platos-validos (+ ?platos-validos 1))
        (make-instance of MAIN::plato-valido (id ?dish-id) (course (send ?d get-course)) (price ?dish-price))))
+   
    (printout t "Platos totales: " ?total-platos crlf)
    (printout t "Platos válidos: " ?platos-validos crlf)
    (if (> ?platos-descartados-cocina 0) then
@@ -67,8 +85,12 @@
      (printout t "Platos descartados por precio: " ?platos-descartados-precio crlf))
    (if (> ?platos-descartados-temporada 0) then
      (printout t "Platos descartados por ingredientes fuera de temporada: " ?platos-descartados-temporada crlf))
-   ;; Filter by beverage pairing if wine
-   (if (or (eq ?bev-subtype vino_blanco) (eq ?bev-subtype vino_tinto)) then
+   
+   ;; Filter by beverage pairing if wine (only if NOT vegetarian/vegan)
+   (bind ?is-vegetarian-or-vegan (or (member$ vegetarian ?user-diets) (member$ vegan ?user-diets)))
+   (if (and (or (eq ?bev-subtype vino_blanco) (eq ?bev-subtype vino_tinto)) 
+            (not ?is-vegetarian-or-vegan)
+            (eq ?aplicar si)) then
      (bind ?required-pairing (if (eq ?bev-subtype vino_blanco) then pescado else carne))
      (printout t "Filtrando platos principales por emparejamiento con " ?required-pairing crlf)
      (bind ?mains-removed 0)
@@ -78,14 +100,15 @@
          (bind ?mains-removed (+ ?mains-removed 1))
          (send ?p delete)))
      (printout t "Platos principales eliminados: " ?mains-removed crlf))
+   (if ?is-vegetarian-or-vegan then
+     (printout t "Dieta vegetariana/vegana detectada - omitiendo filtrado por maridaje de vino" crlf))
    (printout t "Filtrado completado " crlf)
-  (make-instance of MAIN::filtrado-completado)
-  (focus RECOMENDACION_MENUS)
-  (run))
+   (make-instance of MAIN::filtrado-completado)
+   (focus RECOMENDACION_MENUS)
+   (run))
 
 ;; Mostrar bebidas compatibles (simple helper rule)
 (defrule RECOMENDACION_FILTRADO::mostrar-bebidas-compatibles
-
    (object (is-a MAIN::user-profile) (beverage-type ?type) (specific-beverage ?subtype))
    =>
    (printout t crlf "=== BEBIDAS COMPATIBLES ===" crlf)

@@ -70,6 +70,11 @@
   (is-a USER)
   (role concrete))
 
+(defclass MAIN::aplicar-todas-restricciones
+  (is-a USER)
+  (role concrete)
+  (slot aplicar (default yes)))
+
 (defclass MAIN::bebidas-configuradas
   (is-a USER)
   (role concrete))

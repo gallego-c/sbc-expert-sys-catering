@@ -49,11 +49,32 @@
    (not (object (is-a MAIN::dietas-capturadas)))
    =>
    (printout t crlf "== RESTRICCIONES DIETARIAS ==" crlf)
-   (printout t "Opciones disponibles: vegan, vegetarian, lactose_free, gluten_free," crlf)
-   (printout t "egg_free, seafood_free, nut_free" crlf)
+   (printout t "Opciones disponibles: vegan, vegetarian, dairy_free, gluten_free," crlf)
+   (printout t "egg_free, nut_free" crlf)
    (bind ?dietL (parse-list (askline "Ingresa tus restricciones alimentarias separadas por espacios o vacío para ninguna:")))
    (send ?s put-diet ?dietL)
    (make-instance of MAIN::dietas-capturadas)
+   (focus PERFIL_APLICAR_RESTRICCIONES))
+
+;;======================================================
+;;;   Profile Rules - PERFIL_APLICAR_RESTRICCIONES Module
+;;;
+;;;     Ask if all dietary restrictions should be applied
+;;======================================================
+
+(defrule PERFIL_APLICAR_RESTRICCIONES::preguntar-aplicar-restricciones
+   ?s <- (object (is-a MAIN::user-profile) (diet $?d))
+   (object (is-a MAIN::dietas-capturadas))
+   (not (object (is-a MAIN::aplicar-todas-restricciones)))
+   =>
+   (printout t crlf "== APLICACIÓN DE RESTRICCIONES ==" crlf)
+   (if (> (length$ ?d) 0) then
+     (printout t "Has seleccionado las siguientes restricciones dietéticas: " (implode$ ?d) crlf)
+     (bind ?aplicar (ask "¿Deseas que TODOS los menús cumplan con estas restricciones?" si no))
+     (make-instance of MAIN::aplicar-todas-restricciones (aplicar ?aplicar))
+   else
+     (printout t "No has seleccionado restricciones dietéticas." crlf)
+     (make-instance of MAIN::aplicar-todas-restricciones (aplicar yes)))
    (focus PERFIL_COCINA))
 
 ;;======================================================

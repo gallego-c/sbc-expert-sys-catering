@@ -7,6 +7,7 @@
 (defrule RECOMENDACION_MENUS::generar-menus-basicos
    ?profile <- (object (is-a MAIN::user-profile) (diet $?ud) (beverage-type ?btype) (specific-beverage ?bsubtype) (budget ?budget) (cuisine ?user-cuisine) (cuisine-region ?user-region) (event ?event-type))
    (object (is-a MAIN::filtrado-completado))
+   ?restriccion <- (object (is-a MAIN::aplicar-todas-restricciones) (aplicar si))
    (not (object (is-a MAIN::menu-shown)))
    =>
   (printout t crlf "== MENÚS SUGERIDOS ==" crlf)
@@ -408,3 +409,200 @@
        (printout t "  - Verifique que hay ingredientes disponibles para la temporada seleccionada" crlf))))
 
   (focus SALIDA))
+
+(defrule RECOMENDACION_MENUS::generar-menus-mixtos
+   ?profile <- (object (is-a MAIN::user-profile) (diet $?ud) (beverage-type ?btype) (specific-beverage ?bsubtype) (budget ?budget) (cuisine ?user-cuisine) (cuisine-region ?user-region) (event ?event-type))
+   (object (is-a MAIN::filtrado-completado))
+   ?restriccion <- (object (is-a MAIN::aplicar-todas-restricciones) (aplicar no))
+   (not (object (is-a MAIN::menu-shown)))
+   =>
+  (printout t crlf "== MENÚS MIXTOS: 1 VEGETARIANO + 2 SIN RESTRICCIONES DIETÉTICAS ==" crlf)
+  ;; Prevent duplicate activations: mark menu as shown immediately
+  (make-instance of MAIN::menu-shown)
+
+  ;; Calculate offset for menu selection to get different menus each time
+  (bind ?offset (mod (+ (* (random) 100) (integer (time))) 100))
+
+  ;; Determinar si se necesitan 2 aperitivos (para bodas y congresos)
+  (bind ?double-appetizer (or (eq ?event-type boda) (eq ?event-type congreso)))
+  (if ?double-appetizer then
+    (printout t "Evento especial detectado: se incluirán 2 aperitivos en cada menú" crlf))
+
+  ;; Preparar listas de platos válidos por curso (SIN restricciones dietéticas)
+  (bind ?raw-season (send ?profile get-season))
+  (bind ?event-season (normalize-season ?raw-season))
+  (bind ?all-appetizers (find-all-instances ((?p MAIN::plato-valido)) (eq ?p:course appetizer)))
+  (bind ?all-mains (find-all-instances ((?p MAIN::plato-valido)) (eq ?p:course main)))
+  (bind ?all-desserts (find-all-instances ((?p MAIN::plato-valido)) (eq ?p:course dessert)))
+  
+  ;; Filtrar platos vegetarianos para el primer menú
+  (bind ?veg-appetizers (create$))
+  (bind ?veg-mains (create$))
+  (bind ?veg-desserts (create$))
+  
+  (foreach ?a ?all-appetizers
+    (if (es-plato-valido (send ?a get-id) vegetarian) then
+      (bind ?veg-appetizers (insert$ ?veg-appetizers (+ (length$ ?veg-appetizers) 1) ?a))))
+  
+  (foreach ?m ?all-mains
+    (if (es-plato-valido (send ?m get-id) vegetarian) then
+      (bind ?veg-mains (insert$ ?veg-mains (+ (length$ ?veg-mains) 1) ?m))))
+  
+  (foreach ?d ?all-desserts
+    (if (es-plato-valido (send ?d get-id) vegetarian) then
+      (bind ?veg-desserts (insert$ ?veg-desserts (+ (length$ ?veg-desserts) 1) ?d))))
+  
+  (printout t crlf "Platos disponibles:" crlf)
+  (printout t "- Vegetarianos: " (length$ ?veg-appetizers) " entrantes, " (length$ ?veg-mains) " principales, " (length$ ?veg-desserts) " postres" crlf)
+  (printout t "- Sin restricciones: " (length$ ?all-appetizers) " entrantes, " (length$ ?all-mains) " principales, " (length$ ?all-desserts) " postres" crlf crlf)
+  
+  ;; Separar platos en temporada y fuera de temporada
+  (bind ?in-veg-appetizers (create$))
+  (bind ?in-veg-mains (create$))
+  (bind ?in-veg-desserts (create$))
+  (bind ?in-all-appetizers (create$))
+  (bind ?in-all-mains (create$))
+  (bind ?in-all-desserts (create$))
+  
+  (foreach ?a ?veg-appetizers
+    (if (not (ingredientes-fuera-de-temporada (send ?a get-id) ?event-season)) then
+      (bind ?in-veg-appetizers (insert$ ?in-veg-appetizers (+ (length$ ?in-veg-appetizers) 1) ?a))))
+  (foreach ?m ?veg-mains
+    (if (not (ingredientes-fuera-de-temporada (send ?m get-id) ?event-season)) then
+      (bind ?in-veg-mains (insert$ ?in-veg-mains (+ (length$ ?in-veg-mains) 1) ?m))))
+  (foreach ?d ?veg-desserts
+    (if (not (ingredientes-fuera-de-temporada (send ?d get-id) ?event-season)) then
+      (bind ?in-veg-desserts (insert$ ?in-veg-desserts (+ (length$ ?in-veg-desserts) 1) ?d))))
+  
+  (foreach ?a ?all-appetizers
+    (if (not (ingredientes-fuera-de-temporada (send ?a get-id) ?event-season)) then
+      (bind ?in-all-appetizers (insert$ ?in-all-appetizers (+ (length$ ?in-all-appetizers) 1) ?a))))
+  (foreach ?m ?all-mains
+    (if (not (ingredientes-fuera-de-temporada (send ?m get-id) ?event-season)) then
+      (bind ?in-all-mains (insert$ ?in-all-mains (+ (length$ ?in-all-mains) 1) ?m))))
+  (foreach ?d ?all-desserts
+    (if (not (ingredientes-fuera-de-temporada (send ?d get-id) ?event-season)) then
+      (bind ?in-all-desserts (insert$ ?in-all-desserts (+ (length$ ?in-all-desserts) 1) ?d))))
+  
+  (bind ?num-menus 0)
+  (bind ?printed FALSE)
+  
+  ;; MENÚ 1: VEGETARIANO
+  (printout t "=== MENÚ 1: VEGETARIANO ===" crlf crlf)
+  (if (and (> (length$ ?in-veg-appetizers) 0) (> (length$ ?in-veg-mains) 0) (> (length$ ?in-veg-desserts) 0)) then
+    (bind ?idx-app (+ 1 (mod ?offset (length$ ?in-veg-appetizers))))
+    (bind ?idx-main (+ 1 (mod ?offset (length$ ?in-veg-mains))))
+    (bind ?idx-dessert (+ 1 (mod ?offset (length$ ?in-veg-desserts))))
+    (bind ?app (nth$ ?idx-app ?in-veg-appetizers))
+    (bind ?main (nth$ ?idx-main ?in-veg-mains))
+    (bind ?dessert (nth$ ?idx-dessert ?in-veg-desserts))
+    
+    ;; Seleccionar bebida
+    (bind ?pairing (get-pairing (send ?main get-id)))
+    (bind ?bevs (find-all-instances ((?b MAIN::beverage)) (and (eq ?b:type ?btype) (eq ?b:subtype ?bsubtype))))
+    (if (> (length$ ?bevs) 0) then
+      (bind ?bev (nth$ 1 ?bevs))
+      (bind ?bebida (send ?bev get-id))
+      (bind ?bebida-precio (send ?bev get-price))
+    else
+      (bind ?bebida "No disponible")
+      (bind ?bebida-precio 0))
+    
+    (bind ?total-precio (+ ?bebida-precio (send ?app get-price) (send ?main get-price) (send ?dessert get-price)))
+    (bind ?num-menus (+ ?num-menus 1))
+    
+    (if ?double-appetizer then
+      (bind ?available-apps (create$))
+      (foreach ?a ?in-veg-appetizers
+        (if (neq (send ?a get-id) (send ?app get-id)) then
+          (bind ?available-apps (insert$ ?available-apps (+ (length$ ?available-apps) 1) ?a))))
+      (if (> (length$ ?available-apps) 0) then
+        (bind ?idx-app2 (+ 1 (mod (+ ?offset 1) (length$ ?available-apps))))
+        (bind ?app2 (nth$ ?idx-app2 ?available-apps))
+        (printout t "Aperitivos: " crlf)
+        (printout t "  - " (send ?app get-id) " - " (send ?app get-price) "€" crlf)
+        (printout t "  - " (send ?app2 get-id) " - " (send ?app2 get-price) "€" crlf)
+        (bind ?total-precio (+ ?total-precio (send ?app2 get-price)))
+      else
+        (printout t "Entrante: " (send ?app get-id) " - " (send ?app get-price) "€" crlf))
+    else
+      (printout t "Entrante: " (send ?app get-id) " - " (send ?app get-price) "€" crlf))
+    
+    (printout t "Principal: " (send ?main get-id) " - " (send ?main get-price) "€" crlf)
+    (printout t "Postre: " (send ?dessert get-id) " - " (send ?dessert get-price) "€" crlf)
+    (printout t "Bebida: " ?bebida " - " ?bebida-precio "€" crlf)
+    (printout t "PRECIO TOTAL: " ?total-precio "€" crlf)
+    (if (> ?budget 0.0) then
+      (if (<= ?total-precio ?budget) then
+        (printout t "✓ Dentro del presupuesto de " ?budget "€ por persona" crlf)
+      else
+        (printout t "⚠ Excede el presupuesto de " ?budget "€ por persona" crlf)))
+    (printout t crlf)
+    (bind ?printed TRUE)
+  else
+    (printout t "⚠ No hay suficientes platos vegetarianos en temporada para crear un menú completo." crlf crlf))
+  
+  ;; MENÚS 2 y 3: SIN RESTRICCIONES DIETÉTICAS
+  (printout t "=== MENÚS SIN RESTRICCIONES DIETÉTICAS ===" crlf crlf)
+  (if (and (> (length$ ?in-all-appetizers) 0) (> (length$ ?in-all-mains) 0) (> (length$ ?in-all-desserts) 0)) then
+    (loop-for-count (?i 1 2) do
+      (bind ?idx-app (+ 1 (mod (+ ?offset ?i) (length$ ?in-all-appetizers))))
+      (bind ?idx-main (+ 1 (mod (+ ?offset ?i) (length$ ?in-all-mains))))
+      (bind ?idx-dessert (+ 1 (mod (+ ?offset ?i) (length$ ?in-all-desserts))))
+      (bind ?app (nth$ ?idx-app ?in-all-appetizers))
+      (bind ?main (nth$ ?idx-main ?in-all-mains))
+      (bind ?dessert (nth$ ?idx-dessert ?in-all-desserts))
+      
+      ;; Seleccionar bebida
+      (bind ?pairing (get-pairing (send ?main get-id)))
+      (bind ?bevs (find-all-instances ((?b MAIN::beverage)) (and (eq ?b:type ?btype) (eq ?b:subtype ?bsubtype))))
+      (if (> (length$ ?bevs) 0) then
+        (bind ?bev-idx (+ 1 (mod (+ ?offset ?i) (length$ ?bevs))))
+        (bind ?bev (nth$ ?bev-idx ?bevs))
+        (bind ?bebida (send ?bev get-id))
+        (bind ?bebida-precio (send ?bev get-price))
+      else
+        (bind ?bebida "No disponible")
+        (bind ?bebida-precio 0))
+      
+      (bind ?total-precio (+ ?bebida-precio (send ?app get-price) (send ?main get-price) (send ?dessert get-price)))
+      (bind ?num-menus (+ ?num-menus 1))
+      
+      (printout t "MENÚ " ?num-menus ":" crlf)
+      
+      (if ?double-appetizer then
+        (bind ?available-apps (create$))
+        (foreach ?a ?in-all-appetizers
+          (if (neq (send ?a get-id) (send ?app get-id)) then
+            (bind ?available-apps (insert$ ?available-apps (+ (length$ ?available-apps) 1) ?a))))
+        (if (> (length$ ?available-apps) 0) then
+          (bind ?idx-app2 (+ 1 (mod (+ ?offset ?i 1) (length$ ?available-apps))))
+          (bind ?app2 (nth$ ?idx-app2 ?available-apps))
+          (printout t "Aperitivos: " crlf)
+          (printout t "  - " (send ?app get-id) " - " (send ?app get-price) "€" crlf)
+          (printout t "  - " (send ?app2 get-id) " - " (send ?app2 get-price) "€" crlf)
+          (bind ?total-precio (+ ?total-precio (send ?app2 get-price)))
+        else
+          (printout t "Entrante: " (send ?app get-id) " - " (send ?app get-price) "€" crlf))
+      else
+        (printout t "Entrante: " (send ?app get-id) " - " (send ?app get-price) "€" crlf))
+      
+      (printout t "Principal: " (send ?main get-id) " - " (send ?main get-price) "€" crlf)
+      (printout t "Postre: " (send ?dessert get-id) " - " (send ?dessert get-price) "€" crlf)
+      (printout t "Bebida: " ?bebida " - " ?bebida-precio "€" crlf)
+      (printout t "PRECIO TOTAL: " ?total-precio "€" crlf)
+      (if (> ?budget 0.0) then
+        (if (<= ?total-precio ?budget) then
+          (printout t "✓ Dentro del presupuesto de " ?budget "€ por persona" crlf)
+        else
+          (printout t "⚠ Excede el presupuesto de " ?budget "€ por persona" crlf)))
+      (printout t crlf))
+    (bind ?printed TRUE)
+  else
+    (printout t "⚠ No hay suficientes platos disponibles para crear menús sin restricciones." crlf crlf))
+  
+  (if (not ?printed) then
+    (printout t "⚠ No se pudieron generar menús completos. Revise las restricciones y el presupuesto." crlf))
+  
+  (focus SALIDA))
+

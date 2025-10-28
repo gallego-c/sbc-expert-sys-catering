@@ -14,6 +14,7 @@
 (defmodule ENTRADA (import MAIN ?ALL))
 (defmodule PERFIL_DATOS (import MAIN ?ALL))
 (defmodule PERFIL_RESTRICCIONES (import MAIN ?ALL))
+(defmodule PERFIL_APLICAR_RESTRICCIONES (import MAIN ?ALL))
 (defmodule PERFIL_COCINA (import MAIN ?ALL))
 (defmodule PERFIL_BEBIDAS (import MAIN ?ALL))
 (defmodule PERFIL_VALIDACION (import MAIN ?ALL))
