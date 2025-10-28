@@ -115,17 +115,22 @@
            (bind ?menu-in-season (insert$ ?menu-in-season (+ (length$ ?menu-in-season) 1) FALSE))
            (bind ?added (+ ?added 1))))))
 
-   ;; Print all menus (in-season first, then out-of-season with surcharge)
-   (bind ?total-menus (length$ ?menu-appetizers))
-   (if (> ?total-menus 0) then
-     (bind ?in-season-count 0)
-     (bind ?out-season-count 0)
-     ;; Count in-season vs out-of-season
-     (loop-for-count (?i 1 ?total-menus) do
-       (if (nth$ ?i ?menu-in-season) then
-         (bind ?in-season-count (+ ?in-season-count 1))
-       else
-         (bind ?out-season-count (+ ?out-season-count 1))))
+   ;; Get wedding cake if event is a wedding
+  (bind ?wedding-cake nil)
+  (if (eq (send ?profile get-event) wedding) then
+    (bind ?wedding-cake (find-instance ((?d MAIN::plato-valido)) (eq ?d:course wedding-dessert))))
+
+  ;; Print all menus (in-season first, then out-of-season with surcharge)
+  (bind ?total-menus (length$ ?menu-appetizers))
+  (if (> ?total-menus 0) then
+    (bind ?in-season-count 0)
+    (bind ?out-season-count 0)
+    ;; Count in-season vs out-of-season
+    (loop-for-count (?i 1 ?total-menus) do
+      (if (nth$ ?i ?menu-in-season) then
+        (bind ?in-season-count (+ ?in-season-count 1))
+      else
+        (bind ?out-season-count (+ ?out-season-count 1))))
      
      ;; Print in-season menus
      (if (> ?in-season-count 0) then
@@ -137,10 +142,14 @@
            (bind ?dessert (nth$ ?i ?menu-desserts))
            (bind ?num-menus (+ ?num-menus 1))
            (bind ?total-precio (+ ?bebida-precio (send ?app get-price) (send ?main get-price) (send ?dessert get-price)))
+           (if ?wedding-cake then
+             (bind ?total-precio (+ ?total-precio (send ?wedding-cake get-price))))
            (printout t "MENÚ " ?num-menus ":" crlf)
            (printout t "Entrante: " (send ?app get-id) " - " (send ?app get-price) "€" crlf)
            (printout t "Principal: " (send ?main get-id) " - " (send ?main get-price) "€" crlf)
            (printout t "Postre: " (send ?dessert get-id) " - " (send ?dessert get-price) "€" crlf)
+           (if ?wedding-cake then
+             (printout t "Tarta Nupcial: " (send ?wedding-cake get-id) " - " (send ?wedding-cake get-price) "€" crlf))
            (printout t "Bebida: " ?bebida " - " ?bebida-precio "€" crlf)
            (printout t "PRECIO TOTAL: " ?total-precio "€" crlf crlf)))
        (bind ?printed TRUE))
@@ -156,11 +165,15 @@
            (bind ?dessert (nth$ ?i ?menu-desserts))
            (bind ?num-menus (+ ?num-menus 1))
            (bind ?raw-total (+ ?bebida-precio (send ?app get-price) (send ?main get-price) (send ?dessert get-price)))
+           (if ?wedding-cake then
+             (bind ?raw-total (+ ?raw-total (send ?wedding-cake get-price))))
            (bind ?total-precio (* ?raw-total 1.1))
            (printout t "MENÚ " ?num-menus ":" crlf)
            (printout t "Entrante: " (send ?app get-id) " - " (send ?app get-price) "€" crlf)
            (printout t "Principal: " (send ?main get-id) " - " (send ?main get-price) "€" crlf)
            (printout t "Postre: " (send ?dessert get-id) " - " (send ?dessert get-price) "€" crlf)
+           (if ?wedding-cake then
+             (printout t "Tarta Nupcial: " (send ?wedding-cake get-id) " - " (send ?wedding-cake get-price) "€" crlf))
            (printout t "Bebida: " ?bebida " - " ?bebida-precio "€" crlf)
            (printout t "PRECIO TOTAL (con +10% por fuera de temporada): " ?total-precio "€" crlf crlf)))
        (bind ?printed TRUE)))

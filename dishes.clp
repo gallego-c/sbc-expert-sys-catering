@@ -38,4 +38,7 @@
   (make-instance d37 of MAIN::dish (id "new_york_cheesecake_R001_36") (course dessert) (ingredients chocolate butter sugar eggs) (diets vegetarian gluten_free seafood_free nut_free) (price 11.11))
   (make-instance d38 of MAIN::dish (id "new_york_cheesecake_R001_37") (course dessert) (ingredients butter sugar eggs) (diets vegetarian gluten_free seafood_free nut_free) (price 18.96))
   
+  ;; Wedding Cake
+  (make-instance wedding-cake of MAIN::dish (id "tarta_nupcial_elegante") (course wedding-dessert) (ingredients flour sugar eggs butter vanilla whipping_cream fondant) (diets vegetarian) (price 35.00))
+  
 )

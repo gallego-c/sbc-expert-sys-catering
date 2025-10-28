@@ -5,7 +5,7 @@
 ;;======================================================
 
 (defrule RECOMENDACION_MENUS::generar-menus-basicos
-   ?profile <- (object (is-a MAIN::user-profile) (diet $?ud) (beverage-type ?btype) (specific-beverage ?bsubtype) (budget ?budget) (cuisine ?user-cuisine) (cuisine-region ?user-region))
+   ?profile <- (object (is-a MAIN::user-profile) (diet $?ud) (beverage-type ?btype) (specific-beverage ?bsubtype) (budget ?budget) (cuisine ?user-cuisine) (cuisine-region ?user-region) (event ?event-type))
    (object (is-a MAIN::filtrado-completado))
    (not (object (is-a MAIN::menu-shown)))
    =>
@@ -16,12 +16,23 @@
   ;; Calculate offset for menu selection to get different menus each time
   (bind ?offset (mod (+ (* (random) 100) (integer (time))) 100))
 
+  ;; Determinar si se necesitan 2 aperitivos (para bodas y congresos)
+  (bind ?double-appetizer (or (eq ?event-type boda) (eq ?event-type congreso)))
+  (if ?double-appetizer then
+    (printout t "Evento especial detectado: se incluirán 2 aperitivos en cada menú" crlf))
+
   ;; Preparar listas de platos válidos por curso
   (bind ?raw-season (send ?profile get-season))
   (bind ?event-season (normalize-season ?raw-season))
   (bind ?all-appetizers (find-all-instances ((?p MAIN::plato-valido)) (eq ?p:course appetizer)))
    (bind ?all-mains (find-all-instances ((?p MAIN::plato-valido)) (eq ?p:course main)))
   (bind ?all-desserts (find-all-instances ((?p MAIN::plato-valido)) (eq ?p:course dessert)))
+  
+  ;; BUSCAR PASTEL DE BODAS (NUEVO)
+  (bind ?wedding-cake (find-all-instances ((?p MAIN::plato-valido)) (eq ?p:course wedding_cake)))
+  (bind ?wedding-cake-instance (if (> (length$ ?wedding-cake) 0) then (nth$ 1 ?wedding-cake) else nil))
+  (bind ?wedding-cake-price (if (neq ?wedding-cake-instance nil) then (send ?wedding-cake-instance get-price) else 0))
+  (bind ?has-wedding-cake (and (eq ?event-type boda) (neq ?wedding-cake-instance nil)))
   
   ;; If cuisine is "any", group dishes by cuisine to ensure coherent menus
   ;; If region is specified, only include cuisines from that region
@@ -80,10 +91,12 @@
    
    ;; Use parallel lists to store menu components (can't nest multifields)
    (bind ?menu-appetizers (create$))
+   (bind ?menu-appetizers2 (create$))  ;; Nuevo: segundo aperitivo
    (bind ?menu-mains (create$))
    (bind ?menu-desserts (create$))
    (bind ?menu-in-season (create$))  ; TRUE or FALSE for each menu
    (bind ?menu-cuisines (create$))   ; Track cuisine type for each menu
+   (bind ?menu-double-appetizer (create$))  ;; Nuevo: track si usa 2 aperitivos
 
    ;; Try to build in-season menus first (all 3 dishes must be in season)
    (bind ?menus-rejected-budget 0)
@@ -239,6 +252,9 @@
              (bind ?bebida-precio 0))
            (bind ?num-menus (+ ?num-menus 1))
            (bind ?total-precio (+ ?bebida-precio (send ?app get-price) (send ?main get-price) (send ?dessert get-price)))
+           ;; Añadir precio del pastel de bodas si es necesario
+           (if ?has-wedding-cake then
+             (bind ?total-precio (+ ?total-precio ?wedding-cake-price)))
            (bind ?menu-cuisine (nth$ ?i ?menu-cuisines))
            (printout t "MENÚ " ?num-menus)
            (if (eq ?user-cuisine any) then
@@ -247,6 +263,9 @@
            (printout t "Entrante: " (send ?app get-id) " - " (send ?app get-price) "€" crlf)
            (printout t "Principal: " (send ?main get-id) " - " (send ?main get-price) "€" crlf)
            (printout t "Postre: " (send ?dessert get-id) " - " (send ?dessert get-price) "€" crlf)
+           ;; Añadir pastel de bodas si es necesario
+           (if ?has-wedding-cake then
+             (printout t "Pastel de bodas: " (send ?wedding-cake-instance get-id) " - " ?wedding-cake-price "€" crlf))
            (printout t "Bebida: " ?bebida " - " ?bebida-precio "€" crlf)
            (printout t "PRECIO TOTAL: " ?total-precio "€" crlf)
            (if (> ?budget 0.0) then
@@ -288,6 +307,9 @@
              (bind ?bebida-precio 0))
            (bind ?num-menus (+ ?num-menus 1))
            (bind ?raw-total (+ ?bebida-precio (send ?app get-price) (send ?main get-price) (send ?dessert get-price)))
+           ;; Añadir precio del pastel de bodas si es necesario (también con recargo fuera de temporada)
+           (if ?has-wedding-cake then
+             (bind ?raw-total (+ ?raw-total ?wedding-cake-price)))
            (bind ?total-precio (* ?raw-total 1.1))
            (bind ?menu-cuisine (nth$ ?i ?menu-cuisines))
            (printout t "MENÚ " ?num-menus)
@@ -297,6 +319,9 @@
            (printout t "Entrante: " (send ?app get-id) " - " (send ?app get-price) "€" crlf)
            (printout t "Principal: " (send ?main get-id) " - " (send ?main get-price) "€" crlf)
            (printout t "Postre: " (send ?dessert get-id) " - " (send ?dessert get-price) "€" crlf)
+           ;; Añadir pastel de bodas si es necesario (con recargo fuera de temporada)
+           (if ?has-wedding-cake then
+             (printout t "Pastel de bodas: " (send ?wedding-cake-instance get-id) " - " (* ?wedding-cake-price 1.1) "€ (con recargo por fuera de temporada)" crlf))
            (printout t "Bebida: " ?bebida " - " ?bebida-precio "€" crlf)
            (printout t "PRECIO TOTAL (con +10% por fuera de temporada): " ?total-precio "€" crlf)
            (if (> ?budget 0.0) then

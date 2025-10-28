@@ -230,4 +230,5 @@
   (make-instance dj224 of MAIN::dish (id "filete_de_pescado_blanco_al_limon") (course main) (cuisine mediterranean) (difficulty easy) (diet gluten_free dairy_free egg_free pescatarian) (ingredients white_fish lemon olive_oil parsley garlic_cloves salt) (price 13.5))
   (make-instance dj225 of MAIN::dish (id "sardinas_a_la_plancha") (course main) (cuisine spanish) (difficulty easy) (diet gluten_free dairy_free egg_free pescatarian) (ingredients sardines olive_oil lemon garlic_cloves parsley salt) (price 12.0))
   (make-instance dj226 of MAIN::dish (id "caballa_al_horno_con_tomate") (course main) (cuisine mediterranean) (difficulty easy) (diet gluten_free dairy_free egg_free pescatarian) (ingredients mackerel tomatoes onions olive_oil garlic_cloves oregano salt) (price 13.0))
+  (make-instance dj227 of MAIN::dish (id "pastel_bodas_tradicional") (course wedding_cake) (cuisine any) (difficulty medium) (diet vegetarian egg_free) (ingredients flour sugar eggs butter milk vanilla baking_powder) (price 8.0))
 )
