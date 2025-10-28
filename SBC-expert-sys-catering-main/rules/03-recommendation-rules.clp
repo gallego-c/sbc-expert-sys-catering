@@ -260,7 +260,27 @@
            (if (eq ?user-cuisine any) then
              (printout t " (Cocina: " ?menu-cuisine ")"))
            (printout t ":" crlf)
-           (printout t "Entrante: " (send ?app get-id) " - " (send ?app get-price) "€" crlf)
+           
+           ; Si es boda o congreso, buscamos un segundo aperitivo
+           (if ?double-appetizer then
+             ; Encontrar un segundo aperitivo diferente del primero
+             (bind ?available-apps (create$))
+             (foreach ?a ?in-appetizers
+               (if (neq (send ?a get-id) (send ?app get-id)) then
+                 (bind ?available-apps (insert$ ?available-apps (+ (length$ ?available-apps) 1) ?a))))
+             (if (> (length$ ?available-apps) 0) then
+               (bind ?idx-app2 (+ 1 (mod (+ ?offset 1) (length$ ?available-apps))))
+               (bind ?app2 (nth$ ?idx-app2 ?available-apps))
+               (printout t "Aperitivos: " crlf)
+               (printout t "  - " (send ?app get-id) " - " (send ?app get-price) "€" crlf)
+               (printout t "  - " (send ?app2 get-id) " - " (send ?app2 get-price) "€" crlf)
+               ; Actualizar el total del menú
+               (bind ?total-precio (+ ?total-precio (send ?app2 get-price)))
+             else
+               (printout t "Entrante: " (send ?app get-id) " - " (send ?app get-price) "€ (No hay segundo aperitivo disponible)" crlf))
+           else
+             (printout t "Entrante: " (send ?app get-id) " - " (send ?app get-price) "€" crlf))
+           
            (printout t "Principal: " (send ?main get-id) " - " (send ?main get-price) "€" crlf)
            (printout t "Postre: " (send ?dessert get-id) " - " (send ?dessert get-price) "€" crlf)
            ;; Añadir pastel de bodas si es necesario
@@ -316,7 +336,29 @@
            (if (eq ?user-cuisine any) then
              (printout t " (Cocina: " ?menu-cuisine ")"))
            (printout t ":" crlf)
-           (printout t "Entrante: " (send ?app get-id) " - " (send ?app get-price) "€" crlf)
+
+           ; Si es boda o congreso, buscamos un segundo aperitivo
+           (if ?double-appetizer then
+             ; Encontrar un segundo aperitivo diferente del primero
+             (bind ?available-apps (create$))
+             (foreach ?a ?all-appetizers
+               (if (neq (send ?a get-id) (send ?app get-id)) then
+                 (bind ?available-apps (insert$ ?available-apps (+ (length$ ?available-apps) 1) ?a))))
+             (if (> (length$ ?available-apps) 0) then
+               (bind ?idx-app2 (+ 1 (mod (+ ?offset 1) (length$ ?available-apps))))
+               (bind ?app2 (nth$ ?idx-app2 ?available-apps))
+               (printout t "Aperitivos: " crlf)
+               (printout t "  - " (send ?app get-id) " - " (send ?app get-price) "€" crlf)
+               (printout t "  - " (send ?app2 get-id) " - " (send ?app2 get-price) "€" crlf)
+               ; Actualizar el total bruto del menú (antes del recargo)
+               (bind ?raw-total (+ ?raw-total (send ?app2 get-price)))
+               ; Actualizar el precio total con el recargo
+               (bind ?total-precio (* ?raw-total 1.1))
+             else
+               (printout t "Entrante: " (send ?app get-id) " - " (send ?app get-price) "€ (No hay segundo aperitivo disponible)" crlf))
+           else
+             (printout t "Entrante: " (send ?app get-id) " - " (send ?app get-price) "€" crlf))
+
            (printout t "Principal: " (send ?main get-id) " - " (send ?main get-price) "€" crlf)
            (printout t "Postre: " (send ?dessert get-id) " - " (send ?dessert get-price) "€" crlf)
            ;; Añadir pastel de bodas si es necesario (con recargo fuera de temporada)
