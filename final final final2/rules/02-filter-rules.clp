@@ -28,7 +28,7 @@
    
    ;; Determinar si aplicar restricciones dietéticas
    (if (eq ?aplicar no) then
-     (printout t " MODO ESPECIAL: Se generará 1 menú vegetariano y 2 menús sin restricciones dietéticas" crlf))
+     (printout t " MODO ESPECIAL: Se generará 1 menú con restricciones y 2 menús sin restricciones dietéticas" crlf))
    
    (bind ?total-platos 0)
    (bind ?platos-validos 0)
@@ -46,14 +46,27 @@
      (bind ?dish-difficulty (send ?d get-difficulty))
      (bind ?valido FALSE)
      
-     ;; Determinar qué restricciones dietéticas aplicar
-     (bind ?dietas-a-aplicar (create$))
-     (if (eq ?aplicar si) then
-       ;; Aplicar todas las restricciones dietéticas del usuario
-       (bind ?dietas-a-aplicar ?user-diets)
-     else
-       ;; No aplicar restricciones dietéticas (solo filtros de cocina, dificultad, presupuesto)
-       (bind ?dietas-a-aplicar (create$)))
+    ;; Determinar qué restricciones dietéticas aplicar
+    ;; Clean the user's diet list to include only known tokens (defensive - in case of older data)
+    (bind ?allowed-diets (create$ vegan vegetarian dairy_free gluten_free egg_free))
+    (bind ?cleaned-diets (create$))
+    (foreach ?d ?user-diets
+      (if (member$ ?d ?allowed-diets) then
+        (bind ?cleaned-diets (create$ ?cleaned-diets ?d))))
+    ;; By default, don't apply diets unless user explicitly provided them and chose to apply
+    (bind ?dietas-a-aplicar (create$))
+    (if (eq ?aplicar si) then
+      (if (> (length$ ?cleaned-diets) 0) then
+        (bind ?dietas-a-aplicar ?cleaned-diets)
+      else
+        ;; No valid diets provided - don't apply diet filtering
+        (bind ?dietas-a-aplicar (create$)))
+    else
+      ;; Special mode: only generate vegetarian menu if user explicitly requested vegetarian
+      (if (member$ vegetarian ?cleaned-diets) then
+        (bind ?dietas-a-aplicar (create$ vegetarian))
+      else
+        (bind ?dietas-a-aplicar (create$))))
      
      ;; First check dietary restrictions
      (if (not (es-plato-valido ?dish-id (expand$ ?dietas-a-aplicar))) then
@@ -96,7 +109,7 @@
      (printout t "Platos descartados por ingredientes fuera de temporada: " ?platos-descartados-temporada crlf))
    
    ;; Filter by beverage pairing if wine (only if NOT vegetarian/vegan)
-   (bind ?is-vegetarian-or-vegan (or (member$ vegetarian ?user-diets) (member$ vegan ?user-diets)))
+  (bind ?is-vegetarian-or-vegan (or (member$ vegetarian ?cleaned-diets) (member$ vegan ?cleaned-diets)))
    (if (and (or (eq ?bev-subtype vino_blanco) (eq ?bev-subtype vino_tinto)) 
             (not ?is-vegetarian-or-vegan)
             (eq ?aplicar si)) then

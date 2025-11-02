@@ -28,8 +28,15 @@
    (bind ?event  (ask "¿Qué tipo de evento es?" boda congreso reunion any))
    (printout t "¿Cuántas personas asistirán al evento?" crlf "> ")
    (bind ?num-people (read))
+   (if (or (not (numberp ?num-people)) (< ?num-people 1)) then
+      (printout t "Entrada inválida para número de personas. Se ajustará a 1." crlf)
+      (bind ?num-people 1))
    (printout t "¿Cuál es el presupuesto por persona (en EUR)?" crlf "> ")
    (bind ?budget (read))
+   ;; Ensure numeric inputs are not negative. If negative, clamp to 0 and notify the user.
+   (if (or (not (numberp ?budget)) (< ?budget 24)) then
+      (printout t "Entrada inválida o demasiado baja. Se ajustará presupuesto a 24." crlf)
+      (bind ?budget 24))
    (send ?s put-season ?season)
    (send ?s put-event ?event)
    (send ?s put-num-people ?num-people)
@@ -42,16 +49,37 @@
 ;;;
 ;;;     Capture dietary restrictions
 ;;======================================================
-
 (defrule PERFIL_RESTRICCIONES::capturar-dietas
    ?s <- (object (is-a MAIN::user-profile) (diet $?d&:(eq (length$ ?d) 0)))
    (object (is-a MAIN::datos-basicos-capturados))
    (not (object (is-a MAIN::dietas-capturadas)))
    =>
    (printout t crlf "== RESTRICCIONES DIETARIAS ==" crlf)
-   (printout t "Opciones disponibles: vegan, vegetarian, dairy_free, gluten_free," crlf)
-   (printout t "egg_free, nut_free" crlf)
-   (bind ?dietL (parse-list (askline "Ingresa tus restricciones alimentarias separadas por espacios o vacío para ninguna:")))
+   (printout t "Opciones disponibles: vegan, vegetarian, dairy_free, gluten_free, egg_free" crlf)
+   ; (bind ?dietL (parse-list (askline "Ingresa tus restricciones alimentarias separadas por espacios o vacío para ninguna:")))
+   ; (send ?s put-diet ?dietL)
+    ;; parse-list devuelve strings, no símbolos
+   (bind ?rawDiet (parse-list (askline "Ingresa tus restricciones alimentarias separadas por espacios o vacío para ninguna:")))
+   
+   ;; Lista de dietas permitidas (símbolos)
+   (bind ?allowed (create$ vegan vegetarian dairy_free gluten_free egg_free))
+   
+   ;; Filtrar solo las dietas válidas
+   (bind ?dietL (create$))
+   (bind ?invalid-found FALSE)
+   
+   (foreach ?d ?rawDiet
+      ;; Convertir el string a símbolo para comparar correctamente
+      (bind ?d-sym (sym-cat ?d))
+      (if (member$ ?d-sym ?allowed) then
+         (bind ?dietL (insert$ ?dietL (+ (length$ ?dietL) 1) ?d-sym))
+       else
+         (bind ?invalid-found TRUE)
+         (printout t "Advertencia: '" ?d "' no es una restricción válida y será ignorada." crlf)))
+   
+   (if ?invalid-found then
+      (printout t "Algunas entradas inválidas fueron ignoradas." crlf))
+   
    (send ?s put-diet ?dietL)
    (make-instance of MAIN::dietas-capturadas)
    (focus PERFIL_APLICAR_RESTRICCIONES))

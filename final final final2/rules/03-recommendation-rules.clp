@@ -432,7 +432,7 @@
    ?restriccion <- (object (is-a MAIN::aplicar-todas-restricciones) (aplicar no))
    (not (object (is-a MAIN::menu-shown)))
    =>
-   (printout t crlf "== MENÚS MIXTOS: 1 VEGETARIANO + 2 SIN RESTRICCIONES DIETÉTICAS ==" crlf)
+   (printout t crlf "== MENÚS MIXTOS: 1 CON RESTRICCIONES + 2 SIN RESTRICCIONES DIETÉTICAS ==" crlf)
    ;; Prevent duplicate activations: mark menu as shown immediately
    (make-instance of MAIN::menu-shown)
 
@@ -451,25 +451,25 @@
    (bind ?all-mains (find-all-instances ((?p MAIN::plato-valido)) (eq ?p:course main)))
    (bind ?all-desserts (find-all-instances ((?p MAIN::plato-valido)) (eq ?p:course dessert)))
    
-   ;; Filtrar platos vegetarianos para el primer menú
+   ;; Filtrar platos que cumplen las restricciones activas del perfil para el primer menú
    (bind ?veg-appetizers (create$))
    (bind ?veg-mains (create$))
    (bind ?veg-desserts (create$))
    
    (foreach ?a ?all-appetizers
-      (if (es-plato-valido (send ?a get-id) vegetarian) then
+      (if (es-plato-valido (send ?a get-id) (expand$ ?ud)) then
          (bind ?veg-appetizers (insert$ ?veg-appetizers (+ (length$ ?veg-appetizers) 1) ?a))))
    
    (foreach ?m ?all-mains
-      (if (es-plato-valido (send ?m get-id) vegetarian) then
+      (if (es-plato-valido (send ?m get-id) (expand$ ?ud)) then
          (bind ?veg-mains (insert$ ?veg-mains (+ (length$ ?veg-mains) 1) ?m))))
    
    (foreach ?d ?all-desserts
-      (if (es-plato-valido (send ?d get-id) vegetarian) then
+      (if (es-plato-valido (send ?d get-id) (expand$ ?ud)) then
          (bind ?veg-desserts (insert$ ?veg-desserts (+ (length$ ?veg-desserts) 1) ?d))))
    
-   (printout t crlf "Platos disponibles:" crlf)
-   (printout t "- Vegetarianos: " (length$ ?veg-appetizers) " entrantes, " (length$ ?veg-mains) " principales, " (length$ ?veg-desserts) " postres" crlf)
+   (printout t crlf "Platos disponibles (primer menú = restricciones activas):" crlf)
+   (printout t "- Con restricciones activas: " (length$ ?veg-appetizers) " entrantes, " (length$ ?veg-mains) " principales, " (length$ ?veg-desserts) " postres" crlf)
    (printout t "- Sin restricciones: " (length$ ?all-appetizers) " entrantes, " (length$ ?all-mains) " principales, " (length$ ?all-desserts) " postres" crlf crlf)
    
    ;; Separar platos en temporada y fuera de temporada
@@ -502,9 +502,8 @@
    
    (bind ?num-menus 0)
    (bind ?printed FALSE)
-   
-   ;; MENÚ 1: VEGETARIANO
-   (printout t "=== MENÚ 1: VEGETARIANO ===" crlf crlf)
+   ;; MENÚ 1: CON RESTRICCIONES DE DIETA
+   (printout t "=== MENÚ 1: CON RESTRICCIONES DE DIETA ===" crlf crlf)
    (if (and (> (length$ ?in-veg-appetizers) 0) (> (length$ ?in-veg-mains) 0) (> (length$ ?in-veg-desserts) 0)) then
       ;; Try to find matching appetizer and main dish
       (bind ?found-match FALSE)
@@ -566,10 +565,10 @@
          (printout t crlf)
          (bind ?printed TRUE)
       else
-         (printout t "⚠ No se pudieron encontrar platos vegetarianos que coincidan en cocina o región." crlf crlf))
+         (printout t "⚠ No se pudieron encontrar platos con restricciones que coincidan en cocina o región." crlf crlf))
    else
-      (printout t "⚠ No hay suficientes platos vegetarianos en temporada para crear un menú completo." crlf crlf))
-   
+      (printout t "⚠ No hay suficientes platos con restricciones en temporada para crear un menú completo." crlf crlf))
+
    ;; MENÚS 2 y 3: SIN RESTRICCIONES DIETÉTICAS (MEDIO Y CARO)
    (printout t "=== MENÚS SIN RESTRICCIONES DIETÉTICAS ===" crlf crlf)
    (if (and (> (length$ ?in-all-appetizers) 0) (> (length$ ?in-all-mains) 0) (> (length$ ?in-all-desserts) 0)) then

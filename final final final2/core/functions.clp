@@ -36,6 +36,14 @@
   else
     (return nil)))
 
+(deffunction MAIN::debug-parse-list (?input)
+  "Utility to debug parse-list from the CLIPS prompt. Prints the raw input, the multifield returned and each token."
+  (printout t "DEBUG parse-list: raw input='" ?input "'" crlf)
+  (bind ?res (parse-list ?input))
+  (printout t "DEBUG parse-list: multifield='" (implode$ ?res) "'" crlf)
+  (foreach ?t ?res (printout t "DEBUG parse-list token: '" ?t "'" crlf))
+  (return ?res))
+
 (deffunction MAIN::es-plato-valido (?dish-id $?dietas-usuario)
   (bind ?dish-objs (find-all-instances ((?d MAIN::dish)) (eq (send ?d get-id) ?dish-id)))
   (if (> (length$ ?dish-objs) 0) then
@@ -82,6 +90,9 @@
       (if (and (not (member$ any ?seasons)) (not (member$ year_round ?seasons)) (not (member$ ?event-season ?seasons))) then
         (return TRUE))))
   FALSE)
+
+
+;; MAIN::ask-diets was removed per user request; revert to original behavior handled by parse-list in rules.
 
 
 (deffunction MAIN::normalize-season (?season)
