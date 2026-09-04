@@ -9,7 +9,7 @@
 ;;****************
 
 ;; System configuration
-(defglobal
-   ?*SYSTEM-NAME* = "Sistema de Menus - Catering Expert System"
-   ?*VERSION* = "1.0"
-   ?*MAX-MENUS* = 6)
+;; Define globals in the current module context (MAIN is already declared by config/modules.clp)
+(defglobal ?*SYSTEM-NAME* = "Sistema de Menus - Catering Expert System")
+(defglobal ?*VERSION* = "1.0")
+(defglobal ?*MAX-MENUS* = 3)

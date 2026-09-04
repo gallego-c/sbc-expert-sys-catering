@@ -1,44 +1,139 @@
-;;======================================================
-;;;   Filter Rules
+﻿;;======================================================
+;;;   Filter Rules - RECOMENDACION_FILTRADO Module
 ;;;
-;;;     Filter and display compatible dishes and beverages
+;;;     Filter dishes by dietary restrictions
 ;;======================================================
 
-;; Filtrar platos por dieta, alergenos y evento
+(defrule RECOMENDACION_FILTRADO::filtrar-por-dietas
+   ?profile <- (object (is-a MAIN::user-profile) (diet $?user-diets) (specific-beverage ?bev-subtype) (num-people ?num-people) (budget ?budget) (cuisine ?cuisine) (cuisine-region ?region) (season ?event-season))
+   ?restriccion <- (object (is-a MAIN::aplicar-todas-restricciones) (aplicar ?aplicar))
+   (not (object (is-a MAIN::filtrado-completado)))
+   =>
+   (printout t crlf "== FILTRANDO PLATOS POR RESTRICCIONES DIETARIAS ==" crlf)
+   
+   ;; Validate num-people and budget are numbers
+   (if (not (numberp ?num-people)) then (bind ?num-people 0))
+   (if (not (numberp ?budget)) then (bind ?budget 0.0))
+   
+   (if (> ?num-people 100) then
+     (printout t " Evento grande detectado (>100 personas): solo platos de dificultad 'easy'" crlf))
+   (if (> ?budget 0.0) then
+     (printout t " Presupuesto por persona: " ?budget "€ - filtrando platos por precio" crlf))
+   (if (neq ?region any) then
+     (printout t " Filtrando por región: " ?region crlf))
+   (if (neq ?cuisine any) then
+     (printout t " Filtrando por cocina: " ?cuisine crlf))
+   (if (neq ?event-season any) then
+     (printout t " Filtrando por temporada: " ?event-season " (verificando ingredientes)" crlf))
+   
+   ;; Determinar si aplicar restricciones dietéticas
+   (if (eq ?aplicar no) then
+     (printout t " MODO ESPECIAL: Se generará 1 menú con restricciones y 2 menús sin restricciones dietéticas" crlf))
+   
+   (bind ?total-platos 0)
+   (bind ?platos-validos 0)
+   (bind ?platos-descartados-dificultad 0)
+   (bind ?platos-descartados-precio 0)
+   (bind ?platos-descartados-cocina 0)
+   (bind ?platos-descartados-region 0)
+   (bind ?platos-descartados-temporada 0)
+   
+   (do-for-all-instances ((?d MAIN::dish)) TRUE
+     (bind ?total-platos (+ ?total-platos 1))
+     (bind ?dish-id (send ?d get-id))
+     (bind ?dish-price (send ?d get-price))
+     (bind ?dish-cuisine (send ?d get-cuisine))
+     (bind ?dish-difficulty (send ?d get-difficulty))
+     (bind ?valido FALSE)
+     
+    ;; Determinar qué restricciones dietéticas aplicar
+    ;; Clean the user's diet list to include only known tokens (defensive - in case of older data)
+    (bind ?allowed-diets (create$ vegan vegetarian dairy_free gluten_free egg_free))
+    (bind ?cleaned-diets (create$))
+    (foreach ?d ?user-diets
+      (if (member$ ?d ?allowed-diets) then
+        (bind ?cleaned-diets (create$ ?cleaned-diets ?d))))
+    ;; By default, don't apply diets unless user explicitly provided them and chose to apply
+    (bind ?dietas-a-aplicar (create$))
+    (if (eq ?aplicar si) then
+      (if (> (length$ ?cleaned-diets) 0) then
+        (bind ?dietas-a-aplicar ?cleaned-diets)
+      else
+        ;; No valid diets provided - don't apply diet filtering
+        (bind ?dietas-a-aplicar (create$)))
+    else
+      ;; Special mode: only generate vegetarian menu if user explicitly requested vegetarian
+      (if (member$ vegetarian ?cleaned-diets) then
+        (bind ?dietas-a-aplicar (create$ vegetarian))
+      else
+        (bind ?dietas-a-aplicar (create$))))
+     
+     ;; First check dietary restrictions
+     (if (not (es-plato-valido ?dish-id (expand$ ?dietas-a-aplicar))) then
+       ;; Skip - not valid for diet
+       (bind ?valido FALSE)
+     else
+       ;; Then check region preference (if specified)
+       (if (and (neq ?region any) (not (cuisine-belongs-to-region ?dish-cuisine ?region))) then
+         (bind ?platos-descartados-region (+ ?platos-descartados-region 1))
+       else
+         ;; Then check specific cuisine preference
+         (if (and (neq ?cuisine any) (neq ?dish-cuisine ?cuisine)) then
+           (bind ?platos-descartados-cocina (+ ?platos-descartados-cocina 1))
+         else
+           ;; Then check difficulty for large events (only if >100 people)
+           (if (and (> ?num-people 100) (neq ?dish-difficulty easy)) then
+             (bind ?platos-descartados-dificultad (+ ?platos-descartados-dificultad 1))
+           else
+             ;; Then check budget constraint
+             (if (and (> ?budget 0.0) (> ?dish-price (* ?budget 0.4))) then
+               (bind ?platos-descartados-precio (+ ?platos-descartados-precio 1))
+             else
+               (bind ?valido TRUE))))))
+     ;; Create instance if valid
+     (if ?valido then
+       (bind ?platos-validos (+ ?platos-validos 1))
+       (make-instance of MAIN::plato-valido (id ?dish-id) (course (send ?d get-course)) (price ?dish-price))))
+   
+   (printout t "Platos totales: " ?total-platos crlf)
+   (printout t "Platos válidos: " ?platos-validos crlf)
+   (if (> ?platos-descartados-region 0) then
+     (printout t "Platos descartados por región: " ?platos-descartados-region crlf))
+   (if (> ?platos-descartados-cocina 0) then
+     (printout t "Platos descartados por cocina: " ?platos-descartados-cocina crlf))
+   (if (> ?platos-descartados-dificultad 0) then
+     (printout t "Platos descartados por dificultad: " ?platos-descartados-dificultad crlf))
+   (if (> ?platos-descartados-precio 0) then
+     (printout t "Platos descartados por precio: " ?platos-descartados-precio crlf))
+   (if (> ?platos-descartados-temporada 0) then
+     (printout t "Platos descartados por ingredientes fuera de temporada: " ?platos-descartados-temporada crlf))
+   
+   ;; Filter by beverage pairing if wine (only if NOT vegetarian/vegan)
+  (bind ?is-vegetarian-or-vegan (or (member$ vegetarian ?cleaned-diets) (member$ vegan ?cleaned-diets)))
+   (if (and (or (eq ?bev-subtype vino_blanco) (eq ?bev-subtype vino_tinto)) 
+            (not ?is-vegetarian-or-vegan)
+            (eq ?aplicar si)) then
+     (bind ?required-pairing (if (eq ?bev-subtype vino_blanco) then pescado else carne))
+     (printout t "Filtrando platos principales por emparejamiento con " ?required-pairing crlf)
+     (bind ?mains-removed 0)
+     (do-for-all-instances ((?p MAIN::plato-valido)) (eq ?p:course main)
+       (bind ?pairing (get-pairing ?p:id))
+       (if (neq ?pairing ?required-pairing) then
+         (bind ?mains-removed (+ ?mains-removed 1))
+         (send ?p delete)))
+     (printout t "Platos principales eliminados: " ?mains-removed crlf))
+   (if ?is-vegetarian-or-vegan then
+     (printout t "Dieta vegetariana/vegana detectada - omitiendo filtrado por maridaje de vino" crlf))
+   (printout t "Filtrado completado " crlf)
+   (make-instance of MAIN::filtrado-completado)
+   (focus RECOMENDACION_MENUS)
+   (run))
 
-(defrule filter-dishes
-  (user-profile (diet $?ud) (event ?event))
-  =>
-  (printout t crlf "=== PLATOS COMPATIBLES ===" crlf)
-  (bind ?count-primero 0)
-  (bind ?count-segundo 0)
-  (bind ?count-postre 0)
-  
-  ; Mostrar platos filtrados
-  (do-for-all-facts ((?d dish)) TRUE
-    ; Verificar si el plato es compatible con las dietas
-    (bind ?diet-compatible TRUE)
-    (if (> (length$ $?ud) 0) then
-      (bind ?diet-compatible (subsetp $?ud ?d:diets)))
-    
-    (if ?diet-compatible then
-      (printout t ?d:course ": " ?d:id " - " ?d:price " EUR")
-      (if (> (length$ ?d:diets) 0) then
-        (printout t " [" (implode$ ?d:diets) "]"))
-      (printout t crlf)
-      
-      ; Contar por curso
-      (if (eq ?d:course primero) then (bind ?count-primero (+ ?count-primero 1)))
-      (if (eq ?d:course segundo) then (bind ?count-segundo (+ ?count-segundo 1)))
-      (if (eq ?d:course postre) then (bind ?count-postre (+ ?count-postre 1))))
-  )
-  
-  (printout t crlf "Resumen: " ?count-primero " primeros, " ?count-segundo " segundos, " ?count-postre " postres" crlf))
-
-;; Mostrar bebidas compatibles
-(defrule show-beverages
-  (user-profile (beverage-type ?type) (specific-beverage ?subtype))
-  =>
-  (printout t crlf "=== BEBIDAS COMPATIBLES ===" crlf)
-  (do-for-all-facts ((?b beverage)) (and (eq ?b:type ?type) (eq ?b:subtype ?subtype))
-    (printout t ?b:subtype ": " ?b:id " - " ?b:price " EUR" crlf)))
+;; Mostrar bebidas compatibles (simple helper rule)
+(defrule RECOMENDACION_FILTRADO::mostrar-bebidas-compatibles
+   (object (is-a MAIN::user-profile) (beverage-type ?type) (specific-beverage ?subtype))
+   =>
+   (printout t crlf "=== BEBIDAS COMPATIBLES ===" crlf)
+   (do-for-all-instances ((?b MAIN::beverage)) TRUE
+     (if (and (eq ?b:type ?type) (eq ?b:subtype ?subtype)) then
+       (printout t ?b:id " - " (send ?b get-price) "€" crlf))))

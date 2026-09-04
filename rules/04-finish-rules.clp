@@ -1,12 +1,15 @@
 ;;======================================================
-;;;   Finish Rules
+;;;   Finish Rules - SALIDA Module
 ;;;
-;;;     System completion and cleanup
+;;;     System completion and farewell
 ;;======================================================
 
-(defrule finish
-  (declare (salience -1000))
-  ?u <- (user-profile)
-  =>
-  (printout t crlf "=== FIN DEL SISTEMA ===" crlf)
-  (halt))
+(defrule SALIDA::mostrar-fin
+   (object (is-a MAIN::menu-shown))
+   =>
+   (printout t crlf "========================================" crlf)
+   (printout t "   Gracias por usar el sistema de" crlf)
+   (printout t "   recomendación de menús" crlf)
+   (printout t "========================================" crlf)
+   (printout t crlf "¡Que aproveche!" crlf crlf)
+   (halt))

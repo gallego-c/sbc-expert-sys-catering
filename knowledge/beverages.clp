@@ -1,27 +1,56 @@
 ;;======================================================
 ;;;   Beverages Database
 ;;;
-;;;     All beverages data
+;;;     All beverages data as COOL instances
 ;;======================================================
 
-(deffacts beverages-data
-  ; ===== BEBIDAS =====
+(deffunction MAIN::cargar-bebidas ()
   ; Bebidas no alcohólicas
-  (beverage (id "agua_mineral") (type no_alcoholica) (subtype agua) (price 1.50))
-  (beverage (id "refresco_cola") (type no_alcoholica) (subtype refresco) (price 3.00))
-  (beverage (id "zumo_naranja") (type no_alcoholica) (subtype refresco) (price 2.50))
-  (beverage (id "limonada") (type no_alcoholica) (subtype refresco) (price 2.80))
-  (beverage (id "agua_gas") (type no_alcoholica) (subtype agua) (price 1.80))
-  
-  ; Bebidas alcohólicas - Cervezas
-  (beverage (id "cerveza_rubia") (type alcoholica) (subtype cerveza) (price 3.50))
-  (beverage (id "cerveza_tostada") (type alcoholica) (subtype cerveza) (price 3.80))
-  (beverage (id "cerveza_artesanal") (type alcoholica) (subtype cerveza) (price 4.50))
-  
-  ; Bebidas alcohólicas - Vinos
-  (beverage (id "vino_tinto_crianza") (type alcoholica) (subtype vino) (price 5.00))
-  (beverage (id "vino_blanco_joven") (type alcoholica) (subtype vino) (price 4.00))
-  (beverage (id "vino_rosado") (type alcoholica) (subtype vino) (price 4.20))
-  (beverage (id "cava_brut") (type alcoholica) (subtype vino) (price 6.00))
-  (beverage (id "rioja_reserva") (type alcoholica) (subtype vino) (price 7.50))
+  (make-instance b1 of MAIN::beverage (id "agua_mineral") (type no_alcoholica) (subtype agua) (price 1.50))
+  (make-instance b2 of MAIN::beverage (id "refresco_cola") (type no_alcoholica) (subtype refresco) (price 3.00))
+  (make-instance b3 of MAIN::beverage (id "zumo_naranja") (type no_alcoholica) (subtype refresco) (price 2.50))
+  (make-instance b4 of MAIN::beverage (id "limonada") (type no_alcoholica) (subtype refresco) (price 2.80))
+  (make-instance b5 of MAIN::beverage (id "agua_gas") (type no_alcoholica) (subtype agua) (price 1.80))
+  (make-instance b31 of MAIN::beverage (id "vio") (type no_alcoholica) (subtype agua) (price 1.66))
+  (make-instance b32 of MAIN::beverage (id "evian") (type no_alcoholica) (subtype agua) (price 1.56))
+  (make-instance b33 of MAIN::beverage (id "rauch_multivitamin") (type no_alcoholica) (subtype jugos) (price 3.22))
+  (make-instance b34 of MAIN::beverage (id "gerolsteiner") (type no_alcoholica) (subtype agua) (price 0.87))
+  (make-instance b36 of MAIN::beverage (id "vittel") (type no_alcoholica) (subtype agua) (price 0.43))
+  (make-instance b37 of MAIN::beverage (id "san_pellegrino") (type no_alcoholica) (subtype agua) (price 1.21))
+  (make-instance b38 of MAIN::beverage (id "hohes_c_naranja") (type no_alcoholica) (subtype jugos) (price 1.52))
+  (make-instance b39 of MAIN::beverage (id "mango") (type no_alcoholica) (subtype jugos) (price 2.50))
+  (make-instance b40 of MAIN::beverage (id "apollinaris") (type no_alcoholica) (subtype agua) (price 0.82))
+  (make-instance b41 of MAIN::beverage (id "granini_manzana") (type no_alcoholica) (subtype jugos) (price 1.64))
+  (make-instance b42 of MAIN::beverage (id "volvic_touch") (type no_alcoholica) (subtype agua) (price 1.46))
+  (make-instance b43 of MAIN::beverage (id "volvic") (type no_alcoholica) (subtype agua) (price 0.58))
+  (make-instance b44 of MAIN::beverage (id "coca_cola") (type no_alcoholica) (subtype refrescos) (price 1.07))
+  (make-instance b45 of MAIN::beverage (id "selters") (type no_alcoholica) (subtype agua) (price 0.46))
+  (make-instance b46 of MAIN::beverage (id "pepsi") (type no_alcoholica) (subtype refrescos) (price 1.05))
+  (make-instance b47 of MAIN::beverage (id "sprite") (type no_alcoholica) (subtype refrescos) (price 1.10))
+  (make-instance b48 of MAIN::beverage (id "fanta_naranja") (type no_alcoholica) (subtype refrescos) (price 1.08))
+  (make-instance b50 of MAIN::beverage (id "dr_pepper") (type no_alcoholica) (subtype refrescos) (price 1.12))
+  (make-instance b51 of MAIN::beverage (id "sauvignon_blanc") (type alcoholica) (subtype vino_blanco) (price 4.50) (pairs_with pescado))
+  (make-instance b52 of MAIN::beverage (id "chardonnay") (type alcoholica) (subtype vino_blanco) (price 3.50) (pairs_with pescado))
+  (make-instance b53 of MAIN::beverage (id "riesling") (type alcoholica) (subtype vino_blanco) (price 5.00) (pairs_with pescado))
+  (make-instance b54 of MAIN::beverage (id "merlot") (type alcoholica) (subtype vino_tinto) (price 3.00) (pairs_with carne))
+  (make-instance b55 of MAIN::beverage (id "moet_chandon") (type alcoholica) (subtype vino_blanco) (price 12.00) (pairs_with pescado))
+  (make-instance b56 of MAIN::beverage (id "veuve_clicquot") (type alcoholica) (subtype vino_blanco) (price 15.00) (pairs_with pescado))
+  (make-instance b57 of MAIN::beverage (id "rotkappchen_sekt") (type alcoholica) (subtype vino_blanco) (price 4.00) (pairs_with pescado))
+  (make-instance b58 of MAIN::beverage (id "cabernet_sauvignon") (type alcoholica) (subtype vino_tinto) (price 6.00) (pairs_with carne))
+  (make-instance b59 of MAIN::beverage (id "pinot_noir") (type alcoholica) (subtype vino_tinto) (price 7.00) (pairs_with carne))
+  (make-instance b60 of MAIN::beverage (id "syrah") (type alcoholica) (subtype vino_tinto) (price 5.50) (pairs_with carne))
+  (make-instance b61 of MAIN::beverage (id "zinfandel") (type alcoholica) (subtype vino_tinto) (price 6.50) (pairs_with carne))
+  (make-instance b62 of MAIN::beverage (id "malbec") (type alcoholica) (subtype vino_tinto) (price 5.00) (pairs_with carne))
+  (make-instance b63 of MAIN::beverage (id "mahou") (type alcoholica) (subtype cerveza) (price 1.20))
+  (make-instance b64 of MAIN::beverage (id "san_miguel") (type alcoholica) (subtype cerveza) (price 1.30))
+  (make-instance b65 of MAIN::beverage (id "estrella_galicia") (type alcoholica) (subtype cerveza) (price 1.10))
+  (make-instance b66 of MAIN::beverage (id "cruzcampo") (type alcoholica) (subtype cerveza) (price 1.15))
+  (make-instance b67 of MAIN::beverage (id "alhambra") (type alcoholica) (subtype cerveza) (price 1.25))
+  (make-instance b68 of MAIN::beverage (id "voll_damm") (type alcoholica) (subtype cerveza) (price 1.40))
+  (make-instance b69 of MAIN::beverage (id "moritz") (type alcoholica) (subtype cerveza) (price 1.35))
+  (make-instance b70 of MAIN::beverage (id "opus_one") (type alcoholica) (subtype vino_tinto) (price 25.00) (pairs_with carne))
+  (make-instance b71 of MAIN::beverage (id "chateau_lafite_rothschild") (type alcoholica) (subtype vino_tinto) (price 35.00) (pairs_with carne))
+  (make-instance b72 of MAIN::beverage (id "domaine_de_la_romanee_conti") (type alcoholica) (subtype vino_tinto) (price 40.00) (pairs_with carne))
+  (make-instance b73 of MAIN::beverage (id "screaming_eagle") (type alcoholica) (subtype vino_tinto) (price 50.00) (pairs_with carne))
+  (make-instance b74 of MAIN::beverage (id "chateau_margaux") (type alcoholica) (subtype vino_tinto) (price 30.00) (pairs_with carne))
 )
