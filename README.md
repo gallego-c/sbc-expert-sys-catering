@@ -1,203 +1,234 @@
-# Sistema de Menus - Catering Expert System (COOL Version)
+# SBC-expert-sys-catering
 
-Expert system built with CLIPS using COOL (CLIPS Object-Oriented Language) for generating personalized catering menus based on dietary preferences and beverage choices.
+![CLIPS](https://img.shields.io/badge/CLIPS-6.4-blue)
+![Architecture](https://img.shields.io/badge/Architecture-COOL-purple)
+![Topic](https://img.shields.io/badge/Topic-Expert_Systems-orange)
+![Project](https://img.shields.io/badge/Project-Coursework-lightgrey)
 
----
+A CLIPS expert system for generating personalized catering menus using COOL (CLIPS Object-Oriented Language).
 
-## Project Structure
-
-```
-SBC-expert-sys-catering/
-├── load-all-final.bat         # Batch file to load and run the full system
-├── main.clp                   # Alternative entry point (load only)
-├── config/
-│   └── globals.clp            # System global variables
-├── core/
-│   ├── templates.clp          # Class definitions (COOL defclass)
-│   └── functions.clp          # Auxiliary functions
-├── knowledge/
-│   ├── ingredients.clp        # Ingredient categorization (88 instances)
-│   ├── dishes.clp             # Dish database (40 instances)
-│   ├── beverages.clp          # Beverage database (13 instances)
-│   └── data-loader.clp        # Data loading orchestrator
-└── rules/
-    ├── 01-input-rules.clp     # 5 input modules (ENTRADA, PERFIL_*)
-    ├── 02-filter-rules.clp    # Diet-based filtering (RECOMENDACION_FILTRADO)
-    ├── 03-recommendation-rules.clp  # Menu generation (RECOMENDACION_MENUS)
-    └── 04-finish-rules.clp    # Finalization (SALIDA)
-```
-
----
-
-## COOL Architecture
-
-### System Modules
-The system uses `defmodule` and `focus` to control execution flow:
-
-1. **MAIN** - Main module, exports all classes and functions
-2. **ENTRADA** - Initializes the system and displays welcome message
-3. **PERFIL_DATOS** - Captures basic data (name, guests, budget)
-4. **PERFIL_RESTRICCIONES** - Captures dietary restrictions
-5. **PERFIL_BEBIDAS** - Configures beverage preferences
-6. **PERFIL_VALIDACION** - Validates complete profile before recommending
-7. **RECOMENDACION_FILTRADO** - Filters dishes according to restrictions
-8. **RECOMENDACION_MENUS** - Generates complete menus
-9. **SALIDA** - Terminates the system
-
-### Main Classes (defclass)
-
-- **user-profile**: User profile with dietary and beverage preferences
-- **dish**: Dish with course, ingredients, compatible diets, price
-- **ingredient-category**: Ingredient categorization by type
-- **beverage**: Drink with type (alcoholic/non-alcoholic) and subtype
-- **plato-valido**: Dish that passed the diet filter
-- **filtrado-completado**: Marks end of filtering phase
-- **menu-shown**: Marks that menus were displayed
-- **start**: Triggers system startup
-
----
-
-## How to Run
-
-### Method 1: Using the batch file (Recommended)
-
-1. Open CLIPS in the `SBC-expert-sys-catering` directory.
-2. Execute:
-   ```clips
-   CLIPS> (batch "load-all-final.bat")
-   ```
-
-   The batch file automatically:
-   - Loads all modules
-   - Initializes the system with `(reset)`
-   - Loads data with `(cargar-datos-sistema)`
-   - Creates the start instance
-   - Sets focus to ENTRADA
-   - Runs the system with `(run)`
-
-### Method 2: Manual loading
-
-```clips
-CLIPS> (load "main.clp")
-CLIPS> (reset)
-CLIPS> (cargar-datos-sistema)
-CLIPS> (make-instance start-inst of MAIN::start)
-CLIPS> (focus ENTRADA)
-CLIPS> (run)
-```
-
----
-
-## Module Descriptions
-
-### config/globals.clp
-System global variables:
-- `?*SYSTEM-NAME*`: System name
-- `?*VERSION*`: Version
-- `?*MAX-MENUS*`: Maximum number of menus to generate
-
-### knowledge/dishes.clp
-`cargar-platos` function creating 40 `dish` instances:
-- Courses: `appetizer` (starters), `main` (main courses), `dessert` (desserts)
-- Diets: `vegan`, `vegetarian`, `lactose_free`, `gluten_free`, `egg_free`, `seafood_free`, `nut_free`
-
-### knowledge/beverages.clp
-`cargar-bebidas` function creating 13 `beverage` instances:
-- Types: `alcoholica` (beers, wines), `no_alcoholica` (water, soft drinks)
-
-### knowledge/ingredients.clp
-`cargar-ingredientes` function creating 88 `ingredient-category` instances:
-- Categories: `meat`, `fish`, `seafood`, `dairy`, `egg`, `gluten`, `nuts`, `soy`, `vegetable`, `fruit`
-
----
+The system collects a customer profile—including guest count, total budget, dietary restrictions, and beverage preferences—then validates the profile, filters dishes, and generates up to three complete menus with price calculations. Its architecture combines object-based knowledge representation with a modular rule-based execution flow.
 
 ## Features
 
-- **40 different dishes** organized by course (appetizer, main, dessert)
-- **13 beverages** (alcoholic: beers and wines; non-alcoholic: water and soft drinks)
-- **88 categorized ingredients** for precise diet validation
-- **7 diet types**: vegan, vegetarian, lactose_free, gluten_free, egg_free, seafood_free, nut_free
-- **Modular COOL architecture**: Object-oriented programming
-- **Module system**: Execution flow with `focus` and `defmodule`
-- **Up to 3 complete menus** with price calculation
-- **Intelligent validation**: Cross-checks ingredients against dietary categories
+- **Dish knowledge base:** 40 dishes organized into starters, main courses, and desserts.
+- **Beverage selection:** 13 beverages, including beer, wine, water, and soft drinks.
+- **Ingredient classification:** 88 categorized ingredients used to cross-check dietary compatibility.
+- **Dietary filtering:** Seven supported dietary restrictions.
+- **Menu generation:** Up to three complete menu suggestions with calculated prices.
+- **Modular design:** COOL classes represent system data, while CLIPS modules and rules control each processing stage.
 
----
+## Getting started
 
-## Usage Example
+### Prerequisite
 
+The project is documented for **CLIPS 6.4** and uses COOL. Open CLIPS with the repository root (`SBC-expert-sys-catering/`) as its working directory so that relative file paths resolve correctly.
+
+### Run the complete system
+
+Enter the following command at the CLIPS prompt:
+
+```clips
+(batch "load-all-final.bat")
 ```
-========================================
-   SISTEMA DE RECOMENDACION DE MENUS
-========================================
+
+`load-all-final.bat` is a CLIPS batch file. It loads the modules, calls `(reset)`, loads the knowledge base through `(cargar-datos-sistema)`, creates the startup instance, sets focus to `ENTRADA`, and calls `(run)`.
+
+### Load and start manually
+
+Alternatively, enter these commands in order at the CLIPS prompt:
+
+```clips
+(load "main.clp")
+(reset)
+(cargar-datos-sistema)
+(make-instance start-inst of MAIN::start)
+(focus ENTRADA)
+(run)
+```
+
+`main.clp` is the load-only entry point; the remaining commands initialize the data and start rule execution.
+
+## Usage example
+
+During a session, the system asks for customer details, dietary restrictions, and beverage preferences. The following illustrates the inputs shown in the original documentation; it is not a verified execution transcript:
+
+```text
 Nombre del cliente: > Juan Perez
 Numero de comensales: > 50
 Presupuesto total (EUR): > 1500
 Restricciones: > vegetarian,lactose_free
 Tipo de bebida: > alcoholica
 Subtipo: > vino
-
-== MENUS SUGERIDOS ==
-MENU 1:
-  Entrante: ensalada_cesar - 8.5 EUR
-  Principal: lasana_vegetal - 13.0 EUR
-  Postre: tarta_chocolate - 6.0 EUR
-  Bebida: vino_tinto_joven - 12.0 EUR
-  PRECIO TOTAL: 39.5 EUR
 ```
 
----
+After profile validation and dish filtering, the system generates menu suggestions with starter, main course, dessert, beverage, and price information. The original documentation does not establish whether the displayed menu total is per guest or for the whole event, or how the total budget constrains menu selection.
+
+## Project structure
+
+```text
+SBC-expert-sys-catering/
+├── load-all-final.bat             # Load, initialize, and run the system
+├── main.clp                       # Load-only entry point
+├── config/
+│   └── globals.clp                # System-wide configuration
+├── core/
+│   ├── templates.clp              # COOL class definitions (defclass)
+│   └── functions.clp              # Auxiliary functions
+├── knowledge/
+│   ├── ingredients.clp            # 88 ingredient-category instances
+│   ├── dishes.clp                 # 40 dish instances
+│   ├── beverages.clp              # 13 beverage instances
+│   └── data-loader.clp            # Knowledge-base loading orchestration
+└── rules/
+    ├── 01-input-rules.clp          # Startup and customer-profile modules
+    ├── 02-filter-rules.clp         # Dietary filtering
+    ├── 03-recommendation-rules.clp # Menu generation
+    └── 04-finish-rules.clp         # Finalization
+```
+
+## Architecture
+
+### Execution flow
+
+The system uses `defmodule` to organize rules and `focus` to control execution. `MAIN` exports the shared classes and functions used by the processing modules.
+
+| Stage | Module | Responsibility |
+| --- | --- | --- |
+| 1 | `ENTRADA` | Initialize the session and display the welcome message. |
+| 2 | `PERFIL_DATOS` | Collect the customer name, guest count, and budget. |
+| 3 | `PERFIL_RESTRICCIONES` | Collect dietary restrictions. |
+| 4 | `PERFIL_BEBIDAS` | Collect beverage preferences. |
+| 5 | `PERFIL_VALIDACION` | Validate the completed profile before recommendation. |
+| 6 | `RECOMENDACION_FILTRADO` | Filter dishes according to dietary restrictions. |
+| 7 | `RECOMENDACION_MENUS` | Generate complete menus. |
+| 8 | `SALIDA` | Finalize the session. |
+
+### Object model
+
+The classes are defined with COOL's `defclass` construct in `core/templates.clp`.
+
+| Class | Purpose |
+| --- | --- |
+| `user-profile` | Store customer data and dietary and beverage preferences. |
+| `dish` | Represent a dish, including course, ingredients, compatible diets, and price. |
+| `ingredient-category` | Classify ingredients by type. |
+| `beverage` | Represent a beverage with a type and subtype. |
+| `plato-valido` | Represent a dish that passed dietary filtering. |
+| `filtrado-completado` | Mark completion of the filtering stage. |
+| `menu-shown` | Mark that menus have been displayed. |
+| `start` | Trigger system startup. |
+
+### COOL and template-based representation
+
+This version represents data as objects. For readers familiar with template-based CLIPS systems, the main conceptual correspondences are:
+
+| Template-based approach | COOL approach |
+| --- | --- |
+| Define a fact structure with `deftemplate` | Define a class with `defclass` |
+| Create a fact with `assert` | Create an object with `make-instance` |
+| Match facts in rules | Match objects in rules |
+| Remove a fact with `retract` | Delete an instance through a `delete` message |
+| Update fact slots with `modify` | Update instance slots through `put-<slot>` messages |
+
+## Knowledge base
+
+`knowledge/data-loader.clp` coordinates data loading through `cargar-datos-sistema`.
+
+| File | Loader function | Contents |
+| --- | --- | --- |
+| `knowledge/dishes.clp` | `cargar-platos` | 40 `dish` instances |
+| `knowledge/beverages.clp` | `cargar-bebidas` | 13 `beverage` instances |
+| `knowledge/ingredients.clp` | `cargar-ingredientes` | 88 `ingredient-category` instances |
+
+### Courses and dietary restrictions
+
+Dishes use the course identifiers `appetizer`, `main`, and `dessert`.
+
+| Dietary restriction | Identifier |
+| --- | --- |
+| Vegan | `vegan` |
+| Vegetarian | `vegetarian` |
+| Lactose-free | `lactose_free` |
+| Gluten-free | `gluten_free` |
+| Egg-free | `egg_free` |
+| Seafood-free | `seafood_free` |
+| Nut-free | `nut_free` |
+
+Ingredient categories are `meat`, `fish`, `seafood`, `dairy`, `egg`, `gluten`, `nuts`, `soy`, `vegetable`, and `fruit`. These categories support cross-checking ingredients against dietary restrictions.
+
+### Beverage categories
+
+| Type | Meaning | Subtypes |
+| --- | --- | --- |
+| `alcoholica` | Alcoholic | `cerveza`, `vino` |
+| `no_alcoholica` | Non-alcoholic | `agua`, `refresco` |
 
 ## Customization
 
-### Adding new dishes
-Edit `knowledge/dishes.clp` in the `cargar-platos` function:
+### System settings
+
+Edit `config/globals.clp` to configure the documented global variables:
+
+| Variable | Purpose |
+| --- | --- |
+| `?*SYSTEM-NAME*` | System display name |
+| `?*VERSION*` | System version |
+| `?*MAX-MENUS*` | Maximum number of menus to generate |
+
+### Add a dish
+
+Add a `dish` instance inside the `cargar-platos` function in `knowledge/dishes.clp`. This illustrative definition uses the structure documented by the project:
+
 ```clips
 (make-instance of MAIN::dish
-  (id "nombre_plato")
-  (course appetizer)  ; or main, dessert
-  (ingredients pollo tomate cebolla)
+  (id "ensalada_tomate_cebolla")
+  (course appetizer)
+  (ingredients tomate cebolla)
   (diets vegetarian lactose_free)
   (price 10.50))
 ```
 
-### Adding new beverages
-Edit `knowledge/beverages.clp` in the `cargar-bebidas` function:
+Choose `appetizer`, `main`, or `dessert` for the course. Ensure that the declared dietary compatibility agrees with every ingredient and that the ingredients are categorized consistently in `knowledge/ingredients.clp`.
+
+### Add a beverage
+
+Add a `beverage` instance inside the `cargar-bebidas` function in `knowledge/beverages.clp`:
+
 ```clips
 (make-instance of MAIN::beverage
   (id "nombre_bebida")
-  (type alcoholica)  ; or no_alcoholica
-  (subtype vino)     ; cerveza, vino, agua, refresco
+  (type alcoholica)
+  (subtype vino)
   (price 8.50))
 ```
 
----
-
-## COOL vs Template Version
-
-| Template Version | COOL Version |
-| :--- | :--- |
-| `deftemplate` | `defclass` |
-| `assert` | `make-instance` |
-| `retract` | `send delete` |
-| `modify` | `send put-` |
-| `?fact` | `?instance` |
-| Fact matching | Object matching |
-
----
+Use a type and subtype from the beverage categories above. After changing configuration or knowledge-base files, reload and initialize the system to apply the changes.
 
 ## Debugging
 
+Run these commands at the CLIPS prompt to inspect the loaded system:
+
 ```clips
-CLIPS> (instances)                          ; View all instances
-CLIPS> (list-defrules ENTRADA)              ; List rules in a module
-CLIPS> (agenda)                             ; View rule agenda
-CLIPS> (clear)                              ; Reset and reload
-CLIPS> (batch "load-all-final.bat")
+; Inspect current instances.
+(instances)
+
+; List rules in the startup module.
+(list-defrules ENTRADA)
+
+; Inspect the current rule agenda.
+(agenda)
 ```
 
----
+To clear the loaded environment and start a fresh session:
+
+```clips
+(clear)
+(batch "load-all-final.bat")
+```
+
+`(clear)` removes the loaded environment; it does not reload the project. The following batch command performs loading, initialization, and execution again. Run it from the repository root.
 
 ## License
 
-Educational project for expert systems with CLIPS 6.4.
+The project is described as an educational expert-system project using CLIPS 6.4. The supplied documentation does not specify a license. Educational purpose alone does not establish permission to use, modify, or redistribute the code; consult the repository owner for licensing terms.
